@@ -52,6 +52,9 @@ const MenuSections: React.FC<MenuSectionsProps> = ({
   telegramLink,
   facebookLink,
   redditLink,
+  twitterContributorsBitcoin,
+  twitterContributorsLitecoin,
+  twitterAdvocates,
 }) => {
   switch (selectedMenuItem) {
     case 'Info':

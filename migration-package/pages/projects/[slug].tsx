@@ -551,12 +551,16 @@ export const getStaticProps: GetStaticProps = async (context) => {
   const { params } = context
   const slug = params?.slug as string
 
+  console.log(`[getStaticProps] Fetching project with slug: "${slug}"`)
+
   // Fetch project data from the API
   const project = await getProjectBySlug(slug)
-  // console.log('Project: ', project)
+  
+  console.log(`[getStaticProps] Project found:`, project ? `Yes (${project.fieldData.name})` : 'No')
 
   // Handle the case where the project is not found
   if (!project) {
+    console.error(`[getStaticProps] Project "${slug}" not found, returning 404`)
     return {
       notFound: true,
       revalidate: 60, // Revalidate after 60 seconds
@@ -578,10 +582,19 @@ export const getStaticProps: GetStaticProps = async (context) => {
   const allContributors = await getAllActiveContributors()
 
   // Extract contributor IDs from project field data
-  const contributorsBitcoinIds = project.fieldData['bitcoin-contributors'] || []
+  // Try both field name variations for compatibility
+  const contributorsBitcoinIds = 
+    project.fieldData['bitcoin-contributors-2'] || 
+    project.fieldData['bitcoin-contributors'] || 
+    []
   const contributorsLitecoinIds =
-    project.fieldData['litecoin-contributors'] || []
-  const advocateIds = project.fieldData['advocates'] || []
+    project.fieldData['litecoin-contributors-2'] || 
+    project.fieldData['litecoin-contributors'] || 
+    []
+  const advocateIds = 
+    project.fieldData['advocates-2'] || 
+    project.fieldData['advocates'] || 
+    []
 
   // Filter contributors for each type
   const contributorsBitcoin = allContributors.filter((contributor) =>

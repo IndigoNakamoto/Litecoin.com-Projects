@@ -800,19 +800,36 @@ export const getProjectBySlug = async (
     return cachedProject
   }
 
-  // Fetch the project from Webflow
-  const projectResponse = await webflowClient.get<WebflowResponse<Project>>(
-    `/collections/${COLLECTION_ID_PROJECTS}/items`,
-    {
-      params: { slug },
-    }
+  // Fetch all projects from Webflow and filter by slug
+  // Webflow API v2 doesn't support slug filtering via query params
+  const allProjects = await listCollectionItems<Project>(COLLECTION_ID_PROJECTS)
+  
+  // Debug: Log available slugs
+  const availableSlugs = allProjects.map(p => ({
+    slug: p.fieldData.slug,
+    isDraft: p.isDraft,
+    isArchived: p.isArchived,
+    name: p.fieldData.name
+  }))
+  console.log(`[getProjectBySlug] Looking for slug: "${slug}"`)
+  console.log(`[getProjectBySlug] Available projects:`, availableSlugs.map(p => `${p.slug} (draft: ${p.isDraft}, archived: ${p.isArchived})`).join(', '))
+  
+  const project = allProjects.find(
+    (p) => p.fieldData.slug === slug && !p.isDraft && !p.isArchived
   )
 
-  const project = projectResponse.data.items[0]
-
-  if (!project || project.isDraft) {
-    return undefined // Exclude draft or archived projects
+  if (!project) {
+    // Check if project exists but is draft/archived
+    const draftOrArchived = allProjects.find((p) => p.fieldData.slug === slug)
+    if (draftOrArchived) {
+      console.warn(`[getProjectBySlug] Project "${slug}" found but is draft: ${draftOrArchived.isDraft}, archived: ${draftOrArchived.isArchived}`)
+    } else {
+      console.warn(`[getProjectBySlug] Project "${slug}" not found in ${allProjects.length} projects`)
+    }
+    return undefined // Project not found or is draft/archived
   }
+  
+  console.log(`[getProjectBySlug] Found project: ${project.fieldData.name} (slug: ${project.fieldData.slug})`)
 
   // Fetch the status label by mapping the ID
   const statusLabel = await getLabel(
@@ -838,15 +855,24 @@ export const getProjectBySlug = async (
   }
 
   // Get contributors for each category
+  // Try both field name variations for compatibility
   const litecoinContributors = getContributorsByIds(
-    project.fieldData['litecoin-contributors-2'] || []
+    project.fieldData['litecoin-contributors-2'] || 
+    project.fieldData['litecoin-contributors'] || 
+    []
   )
 
   const bitcoinContributors = getContributorsByIds(
-    project.fieldData['bitcoin-contributors-2'] || []
+    project.fieldData['bitcoin-contributors-2'] || 
+    project.fieldData['bitcoin-contributors'] || 
+    []
   )
 
-  const advocates = getContributorsByIds(project.fieldData['advocates-2'] || [])
+  const advocates = getContributorsByIds(
+    project.fieldData['advocates-2'] || 
+    project.fieldData['advocates'] || 
+    []
+  )
 
   // Combine data into projectWithContributors
   const projectWithContributors: ProjectWithUpdatesAndContributors = {
