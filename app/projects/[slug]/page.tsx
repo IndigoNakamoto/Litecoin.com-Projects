@@ -1,4 +1,7 @@
 import { getProjectBySlug } from '@/services/webflow/projects'
+import { getFAQsByProjectSlug, type FAQItem } from '@/services/webflow/faqs'
+import { getPostsByProjectSlug, type Post } from '@/services/webflow/posts'
+import { getUpdatesByProjectSlug, type Update } from '@/services/webflow/updates'
 import { notFound } from 'next/navigation'
 import ProjectDetailClient from '@/components/projects/ProjectDetailClient'
 
@@ -7,12 +10,17 @@ export default async function ProjectPage({
 }: {
   params: Promise<{ slug: string }> | { slug: string }
 }) {
+  // Handle both sync and async params (Next.js 15+ uses Promise)
+  const resolvedParams = params instanceof Promise ? await params : params
+  console.log(`[ProjectPage] Received slug: "${resolvedParams.slug}"`)
+  
+  let project
+  let faqs: FAQItem[] = []
+  let updates: Update[] = []
+  let posts: Post[] = []
+
   try {
-    // Handle both sync and async params (Next.js 15+ uses Promise)
-    const resolvedParams = params instanceof Promise ? await params : params
-    console.log(`[ProjectPage] Received slug: "${resolvedParams.slug}"`)
-    
-    const project = await getProjectBySlug(resolvedParams.slug)
+    project = await getProjectBySlug(resolvedParams.slug)
 
     if (!project) {
       console.error(`[ProjectPage] Project "${resolvedParams.slug}" not found, calling notFound()`)
@@ -21,29 +29,41 @@ export default async function ProjectPage({
     
     console.log(`[ProjectPage] Project found: ${project.name}`)
 
-    // TODO: Fetch address stats, FAQs, updates, and posts from APIs
-    const addressStats = {
-      tx_count: 0,
-      funded_txo_sum: 0,
-      supporters: [],
-    }
-    const faqs: any[] = []
-    const updates: any[] = []
-    const posts: any[] = []
+    // Fetch FAQs, updates, and posts from APIs
+    const [fetchedFaqs, fetchedUpdates, fetchedPosts] = await Promise.all([
+      getFAQsByProjectSlug(resolvedParams.slug),
+      getUpdatesByProjectSlug(resolvedParams.slug),
+      getPostsByProjectSlug(resolvedParams.slug),
+    ])
 
-    return (
-      <ProjectDetailClient
-        project={project}
-        addressStats={addressStats}
-        faqs={faqs}
-        updates={updates}
-        posts={posts}
-      />
-    )
-  } catch (error: any) {
+    faqs = fetchedFaqs
+    updates = fetchedUpdates
+    posts = fetchedPosts
+
+    console.log(`[ProjectPage] Fetched ${faqs.length} FAQs, ${updates.length} updates, ${posts.length} posts`)
+  } catch (error) {
     console.error('[ProjectPage] Error rendering page:', error)
-    console.error('[ProjectPage] Error stack:', error.stack)
+    if (error instanceof Error) {
+      console.error('[ProjectPage] Error stack:', error.stack)
+    }
     throw error // Re-throw to show error page
   }
+
+  // TODO: Fetch address stats from APIs
+  const addressStats = {
+    tx_count: 0,
+    funded_txo_sum: 0,
+    supporters: [],
+  }
+
+  return (
+    <ProjectDetailClient
+      project={project}
+      addressStats={addressStats}
+      faqs={faqs}
+      updates={updates}
+      posts={posts}
+    />
+  )
 }
 

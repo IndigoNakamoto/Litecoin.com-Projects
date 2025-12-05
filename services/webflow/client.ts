@@ -49,11 +49,23 @@ export async function listCollectionItems<T>(
     } while (items.length < total)
 
     return items
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const axiosError = error as { response?: { status?: number; data?: unknown }; message?: string }
+    
+    // If rate limited (429), return empty array to allow graceful degradation
+    if (axiosError.response?.status === 429) {
+      console.warn(
+        `Rate limited (429) when fetching items from collection ${collectionId}. Returning empty array.`
+      )
+      return []
+    }
+    
+    const errorMessage = axiosError.response?.data || axiosError.message || 'Unknown error'
     console.error(
       `Error fetching items from collection ${collectionId}:`,
-      error.response?.data || error.message
+      errorMessage
     )
+    // For other errors, still throw to maintain existing behavior
     throw error
   }
 }

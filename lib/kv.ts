@@ -1,10 +1,10 @@
 // Create a safe wrapper that handles missing KV credentials
 const mockKv = {
-  get: async <T>(): Promise<T | null> => null,
-  set: async (): Promise<string> => 'OK',
-  del: async (): Promise<number> => 0,
-  exists: async (): Promise<number> => 0,
-  keys: async (): Promise<string[]> => [],
+  get: async <T>(_key: string): Promise<T | null> => null,
+  set: async (_key: string, _value: any, _options?: { ex?: number }): Promise<string> => 'OK',
+  del: async (_key: string): Promise<number> => 0,
+  exists: async (_key: string): Promise<number> => 0,
+  keys: async (_pattern?: string): Promise<string[]> => [],
 }
 
 let kv: typeof mockKv

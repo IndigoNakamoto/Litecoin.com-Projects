@@ -68,16 +68,14 @@ const ProjectMenu: React.FC<ProjectMenuProps> = ({
             className="group flex h-16 items-center justify-center rounded-lg "
             key={item}
           >
-            {item === 'faq' && faqCount === 0 ? null : item === 'updates' &&
-              updatesCount === 0 ? null : item === 'posts' &&
-              commentCount === 0 ? null : (
+            {item === 'updates' && updatesCount === 0 ? null : (
               <div className="transform-gpu overflow-hidden rounded-xl transition duration-200">
                 <button
                   onClick={() => handleMenuItemClick(item)}
-                  className={`text-[14px] uppercase ${
+                  className={`text-[14px] uppercase !text-black ${
                     activeItem === item
-                      ? 'font-semibold text-[#000000]'
-                      : 'text-gray-700'
+                      ? 'font-semibold'
+                      : ''
                   }`}
                 >
                   {item === 'faq'
@@ -90,9 +88,9 @@ const ProjectMenu: React.FC<ProjectMenuProps> = ({
                   {item === 'faq' &&
                     faqCount > 1 && (
                       <span
-                        className={`absolute text-xs ${
+                        className={`absolute text-xs !text-black ${
                           activeItem === 'faq'
-                            ? 'font-bold text-[#000000]'
+                            ? 'font-bold'
                             : 'font-semibold'
                         }`}
                       >
@@ -102,9 +100,9 @@ const ProjectMenu: React.FC<ProjectMenuProps> = ({
                   {item === 'updates' &&
                     updatesCount > 0 && (
                       <span
-                        className={`absolute text-xs ${
+                        className={`absolute text-xs !text-black ${
                           activeItem === 'updates'
-                            ? 'font-bold text-[#000000]'
+                            ? 'font-bold'
                             : 'font-semibold'
                         }`}
                       >
@@ -114,9 +112,9 @@ const ProjectMenu: React.FC<ProjectMenuProps> = ({
                   {item === 'posts' &&
                     commentCount > 0 && (
                       <span
-                        className={`absolute text-xs ${
+                        className={`absolute text-xs !text-black ${
                           activeItem === 'posts'
-                            ? 'font-bold text-[#000000]'
+                            ? 'font-bold'
                             : 'font-semibold'
                         }`}
                       >

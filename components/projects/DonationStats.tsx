@@ -17,10 +17,10 @@ type StatItemProps = {
 
 const StatItem: React.FC<StatItemProps> = ({ value, label }) => (
   <div>
-    <h4 className="font-space-grotesk text-3xl font-semibold text-blue-500">
+    <h4 className="font-space-grotesk text-3xl font-semibold" style={{ color: '#345D9D' }}>
       {value}
     </h4>
-    <h4 className="">{label}</h4>
+    <h4 className="text-black">{label}</h4>
   </div>
 )
 
@@ -85,13 +85,13 @@ const StandardStats: React.FC<
 
       <div className="border-t border-gray-400/60 pt-4">
         <div>
-          <h4 className="font-space-grotesk text-3xl font-semibold text-blue-500">
+          <h4 className="font-space-grotesk text-3xl font-semibold" style={{ color: '#345D9D' }}>
             {hasLtcRaised && `Ł ${formattedCommunityLtc}`}
             {hasLtcRaised && hasUsdRaised && ' + '}
             {hasUsdRaised && `$ ${formatUSD(grandTotalUSD)}`}
             {!hasLtcRaised && !hasUsdRaised && `$ ${formatUSD(0)}`}
           </h4>
-          <h4 className="">Total Raised</h4>
+          <h4 className="text-black">Total Raised</h4>
         </div>
       </div>
 
@@ -102,13 +102,13 @@ const StandardStats: React.FC<
             label="Total Donations"
           />
           <div>
-            <h4 className="font-space-grotesk text-3xl font-semibold text-blue-500">
+            <h4 className="font-space-grotesk text-3xl font-semibold" style={{ color: '#345D9D' }}>
               {hasLtcPaid && `Ł ${formattedLtcPaid}`}
               {hasLtcPaid && hasUsdPaid && ' + '}
               {hasUsdPaid && `$ ${formatUSD(totalPaid)}`}
               {!hasLtcPaid && !hasUsdPaid && `$ ${formatUSD(0)}`}
             </h4>
-            <h4 className="">Total Paid to Contributors</h4>
+            <h4 className="text-black">Total Paid to Contributors</h4>
           </div>
         </div>
       </div>

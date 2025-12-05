@@ -3,29 +3,34 @@
 import React from 'react'
 import ProjectContent from './ProjectContent'
 import ProjectUpdate from './ProjectUpdate'
+import { FAQSection } from './FAQSection'
+import PostsList from './PostsList'
 import { TwitterUser } from '@/utils/types'
 import type { Contributor } from '@/types/project'
+import type { FAQItem } from '@/services/webflow/faqs'
+import type { Update } from '@/services/webflow/updates'
+import type { Post } from '@/services/webflow/posts'
 
 type MenuSectionsProps = {
   selectedMenuItem: string
   title: string
   content: string
   socialSummary: string
-  faq: any
+  faq: FAQItem[]
   faqCount: number
-  updates: any[]
+  updates: Update[]
   selectedUpdateId: number | null
   setSelectedUpdateId: (id: number | null) => void
   hashtag: string
-  tweetsData: any
+  tweetsData: Post[]
   twitterContributors: TwitterUser[]
   twitterContributorsBitcoin: Contributor[] | TwitterUser[]
   twitterContributorsLitecoin: Contributor[] | TwitterUser[]
   twitterAdvocates: Contributor[] | TwitterUser[]
   twitterUsers: TwitterUser[]
   isBitcoinOlympics2024: boolean
-  formatLits: (value: any) => string
-  formatUSD: (value: any) => string
+  formatLits: (value: number) => string
+  formatUSD: (value: number) => string
   website: string
   gitRepository: string
   twitterHandle: string
@@ -41,10 +46,9 @@ const MenuSections: React.FC<MenuSectionsProps> = ({
   content,
   socialSummary,
   faq,
-  faqCount,
   updates,
   selectedUpdateId,
-  setSelectedUpdateId,
+  tweetsData,
   website,
   gitRepository,
   twitterHandle,
@@ -82,25 +86,13 @@ const MenuSections: React.FC<MenuSectionsProps> = ({
     case 'posts':
       return (
         <div className="markdown">
-          <p>Posts feature coming soon...</p>
+          <PostsList posts={tweetsData} />
         </div>
       )
     case 'faq':
       return (
         <div className="markdown">
-          {faqCount > 0 ? (
-            <div>
-              <h2>Frequently Asked Questions</h2>
-              {Array.isArray(faq) && faq.map((item: any, index: number) => (
-                <div key={index} className="mb-4">
-                  <h3 className="font-semibold">{item.question || item.fieldData?.name}</h3>
-                  <p>{item.answer || item.fieldData?.answer}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p>No FAQs available for this project.</p>
-          )}
+          <FAQSection faqs={Array.isArray(faq) ? faq : []} bg={'#c6d3d6'} />
         </div>
       )
     case 'updates':
@@ -108,20 +100,27 @@ const MenuSections: React.FC<MenuSectionsProps> = ({
         <div className="markdown min-h-full">
           <div>
             {updates && updates.length > 0 ? (
-              updates.map((post: any, index: number) => (
-                <div key={index} id={`update-${post.id || index}`}>
-                  <ProjectUpdate
-                    title={post.title || post.fieldData?.name || 'Update'}
-                    summary={post.summary || post.fieldData?.summary || ''}
-                    authorTwitterHandle={post.authorTwitterHandle || ''}
-                    date={post.date || post.fieldData?.createdOn || ''}
-                    tags={post.tags || []}
-                    content={post.content || post.fieldData?.content}
-                    id={post.id || index}
-                    highlight={selectedUpdateId === (post.id || index)}
-                  />
-                </div>
-              ))
+              updates.map((post: Update, index: number) => {
+                // Convert string ID to number for ProjectUpdate component
+                const numericId = typeof post.id === 'string' 
+                  ? parseInt(post.id.replace(/\D/g, ''), 10) || index 
+                  : (post.id || index)
+                
+                return (
+                  <div key={index} id={`update-${post.id || index}`}>
+                    <ProjectUpdate
+                      title={post.fieldData?.name || post.fieldData?.title || 'Update'}
+                      summary={post.fieldData?.summary || ''}
+                      authorTwitterHandle={post.fieldData?.authorTwitterHandle || ''}
+                      date={post.fieldData?.date || post.fieldData?.createdOn || ''}
+                      tags={post.fieldData?.tags || []}
+                      content={post.fieldData?.content}
+                      id={numericId}
+                      highlight={selectedUpdateId === numericId}
+                    />
+                  </div>
+                )
+              })
             ) : (
               <h1>No updates available for this project.</h1>
             )}

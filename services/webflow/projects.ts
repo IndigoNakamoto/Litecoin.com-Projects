@@ -9,6 +9,7 @@ const CACHE_TTL = 259200 // 3 days in seconds
 // Cache for status ID to label mapping
 let statusLabelMap: { [key: string]: string } | null = null
 const STATUS_MAP_CACHE_KEY = 'webflow:projects:status-map'
+const SCHEMA_CACHE_KEY_PREFIX = 'webflow:schema:'
 
 interface CollectionSchemaField {
   id: string
@@ -30,23 +31,69 @@ interface CollectionSchema {
 }
 
 /**
- * Get the collection schema from Webflow API
+ * Get the collection schema from Webflow API with caching
+ * Returns null if rate limited and no cache is available (allows graceful degradation)
  */
 async function getCollectionSchema(
   client: ReturnType<typeof createWebflowClient>,
   collectionId: string
-): Promise<CollectionSchema> {
+): Promise<CollectionSchema | null> {
+  const cacheKey = `${SCHEMA_CACHE_KEY_PREFIX}${collectionId}`
+  
+  // Try to get from cache first
+  try {
+    const cached = await kv.get<CollectionSchema>(cacheKey)
+    if (cached) {
+      return cached
+    }
+  } catch (_error) {
+    // KV not available, continue
+  }
+
   try {
     const response = await client.get<CollectionSchema>(
       `/collections/${collectionId}`
     )
+    
+    // Cache the schema
+    try {
+      await kv.set(cacheKey, response.data, { ex: CACHE_TTL })
+    } catch (_error) {
+      // KV not available, continue
+    }
+    
     return response.data
-  } catch (error: any) {
-    console.error(
+  } catch (error: unknown) {
+    // If we get a 429 (rate limit), try to use cached data if available
+    const axiosError = error as { response?: { status?: number; data?: unknown }; message?: string }
+    if (axiosError.response?.status === 429) {
+      console.warn(
+        `Rate limited (429) when fetching schema for ${collectionId}, trying cached data...`
+      )
+      try {
+        const cached = await kv.get<CollectionSchema>(cacheKey)
+        if (cached) {
+          console.log(`Using cached schema for ${collectionId}`)
+          return cached
+        }
+      } catch (_cacheError) {
+        // Cache not available
+      }
+      console.warn(
+        `Rate limited and no cached schema available for ${collectionId}. Will use status IDs as-is.`
+      )
+      // Return null to allow graceful degradation
+      return null
+    }
+    
+    const errorMessage = axiosError.response?.data || axiosError.message || 'Unknown error'
+    console.warn(
       `Error fetching collection schema for ${collectionId}:`,
-      error.response?.data || error.message
+      errorMessage,
+      '- Will use status IDs as-is'
     )
-    throw error
+    // Return null instead of throwing to allow graceful degradation
+    return null
   }
 }
 
@@ -64,52 +111,78 @@ async function createStatusLabelMap(
       statusLabelMap = cached
       return cached
     }
-  } catch (error) {
+  } catch (_error) {
     // Cache not available, continue
   }
 
-  const schema = await getCollectionSchema(client, collectionId)
-  const statusField = schema.fields.find((f) => f.slug === 'status')
-
-  if (!statusField) {
-    throw new Error('Status field not found in collection schema')
-  }
-
-  if (!statusField.validations || !statusField.validations.options) {
-    throw new Error('Status field is not an Option field')
-  }
-
-  const map: { [key: string]: string } = {}
-  statusField.validations.options.forEach((option) => {
-    map[option.id] = option.name.trim()
-  })
-
-  statusLabelMap = map
-
-  // Cache the mapping
   try {
-    await kv.set(STATUS_MAP_CACHE_KEY, map, { ex: CACHE_TTL })
-  } catch (error) {
-    // Cache not available, continue
-  }
+    const schema = await getCollectionSchema(client, collectionId)
+    
+    // If schema is null (rate limited or error), return empty map to allow graceful degradation
+    if (!schema) {
+      console.warn('Schema not available, returning empty status map. Status IDs will be used as-is.')
+      const emptyMap: { [key: string]: string } = {}
+      statusLabelMap = emptyMap
+      return emptyMap
+    }
+    
+    const statusField = schema.fields.find((f) => f.slug === 'status')
 
-  return map
+    if (!statusField) {
+      console.warn('Status field not found in collection schema, returning empty map')
+      const emptyMap: { [key: string]: string } = {}
+      statusLabelMap = emptyMap
+      return emptyMap
+    }
+
+    if (!statusField.validations || !statusField.validations.options) {
+      console.warn('Status field is not an Option field, returning empty map')
+      const emptyMap: { [key: string]: string } = {}
+      statusLabelMap = emptyMap
+      return emptyMap
+    }
+
+    const map: { [key: string]: string } = {}
+    statusField.validations.options.forEach((option) => {
+      map[option.id] = option.name.trim()
+    })
+
+    statusLabelMap = map
+
+    // Cache the mapping
+    try {
+      await kv.set(STATUS_MAP_CACHE_KEY, map, { ex: CACHE_TTL })
+    } catch (_error) {
+      // Cache not available, continue
+    }
+
+    return map
+  } catch (error: unknown) {
+    // If we get any error, try to use cached status map if available
+    const axiosError = error as { response?: { status?: number }; message?: string }
+    console.warn(
+      `Error creating status map, trying cached data...`,
+      axiosError.response?.status || axiosError.message
+    )
+    try {
+      const cached = await kv.get<{ [key: string]: string }>(STATUS_MAP_CACHE_KEY)
+      if (cached) {
+        console.log('Using cached status map')
+        statusLabelMap = cached
+        return cached
+      }
+    } catch (_cacheError) {
+      // Cache not available
+    }
+    
+    // If no cached data available, return empty map to allow graceful degradation
+    console.warn('No cached status map available, returning empty map. Status IDs will be used as-is.')
+    const emptyMap: { [key: string]: string } = {}
+    statusLabelMap = emptyMap
+    return emptyMap
+  }
 }
 
-/**
- * Get the label for a status ID
- */
-async function getStatusLabel(
-  client: ReturnType<typeof createWebflowClient>,
-  collectionId: string,
-  statusId: string
-): Promise<string> {
-  if (!statusLabelMap) {
-    await createStatusLabelMap(client, collectionId)
-  }
-
-  return statusLabelMap?.[statusId] || statusId // Fallback to ID if not found
-}
 
 export async function getAllPublishedProjects(): Promise<Project[]> {
   const apiToken = process.env.WEBFLOW_API_TOKEN
@@ -305,17 +378,18 @@ async function fetchProjectWithContributors(
 
     // Fetch contributors
     // Try both field name variations for compatibility
+    const fieldData = webflowProject.fieldData as unknown as Record<string, string[] | undefined>
     const bitcoinContributorIds = 
-      webflowProject.fieldData['bitcoin-contributors-2'] || 
-      webflowProject.fieldData['bitcoin-contributors'] || 
+      fieldData['bitcoin-contributors-2'] || 
+      fieldData['bitcoin-contributors'] || 
       []
     const litecoinContributorIds = 
-      webflowProject.fieldData['litecoin-contributors-2'] || 
-      webflowProject.fieldData['litecoin-contributors'] || 
+      fieldData['litecoin-contributors-2'] || 
+      fieldData['litecoin-contributors'] || 
       []
     const advocateIds = 
-      webflowProject.fieldData['advocates-2'] || 
-      webflowProject.fieldData.advocates || 
+      fieldData['advocates-2'] || 
+      fieldData.advocates || 
       []
     
     console.log(`[fetchProjectWithContributors] Fetching contributors...`)
@@ -330,8 +404,9 @@ async function fetchProjectWithContributors(
         getContributorsByIds(advocateIds),
       ])
       console.log(`[fetchProjectWithContributors] Successfully fetched contributors`)
-    } catch (contributorError: any) {
-      console.warn(`[fetchProjectWithContributors] Error fetching contributors (continuing anyway):`, contributorError.message)
+    } catch (contributorError: unknown) {
+      const errorMessage = contributorError instanceof Error ? contributorError.message : 'Unknown error'
+      console.warn(`[fetchProjectWithContributors] Error fetching contributors (continuing anyway):`, errorMessage)
       // Continue without contributors rather than failing the whole request
     }
 
@@ -365,9 +440,11 @@ async function fetchProjectWithContributors(
 
     console.log(`[fetchProjectWithContributors] Successfully created project object: ${project.name}`)
     return project
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`[fetchProjectWithContributors] Error fetching project "${slug}":`, error)
-    console.error(`[fetchProjectWithContributors] Error details:`, error.message, error.stack)
+    if (error instanceof Error) {
+      console.error(`[fetchProjectWithContributors] Error details:`, error.message, error.stack)
+    }
     throw error
   }
 }
