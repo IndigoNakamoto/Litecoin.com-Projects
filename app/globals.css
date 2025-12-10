@@ -59,3 +59,82 @@ input:-webkit-autofill,
 input:-webkit-autofill:focus {
   transition: background-color 600000s 0s, color 600000s 0s;
 }
+
+/* Markdown styles */
+@layer components {
+  .markdown h1 {
+    @apply mb-4 mt-8 font-space-grotesk text-[39px] font-semibold;
+  }
+
+  .markdown h2 {
+    @apply mb-3 mt-6 font-space-grotesk text-[30px] font-semibold;
+  }
+
+  .markdown h3 {
+    @apply mb-2 mt-5 font-space-grotesk text-[20px] font-semibold;
+  }
+
+  .markdown h4 {
+    @apply mb-2 mt-4 font-space-grotesk text-[18px] font-semibold;
+  }
+
+  .markdown h5 {
+    @apply mb-2 mt-5 font-space-grotesk text-[20px] font-semibold;
+  }
+
+  .markdown h6 {
+    @apply mb-2 mt-3 font-space-grotesk text-[16px] font-semibold;
+  }
+
+  .markdown p {
+    @apply mb-4 text-[16px] font-normal text-black;
+  }
+
+  .markdown a {
+    @apply text-blue-500 hover:underline;
+  }
+
+  .markdown blockquote {
+    @apply my-4 border-l-4 border-gray-300 pl-4 italic;
+  }
+
+  .markdown ul {
+    @apply mb-4 list-inside list-disc pl-4;
+  }
+
+  .markdown ul ul {
+    @apply list-disc pl-8;
+  }
+
+  .markdown ul ul ul {
+    @apply list-disc pl-12;
+  }
+
+  .markdown ol {
+    @apply mb-4 list-inside list-decimal pl-4;
+  }
+
+  .markdown ol ol {
+    @apply list-decimal pl-8;
+  }
+
+  .markdown ol ol ol {
+    @apply list-decimal pl-12;
+  }
+
+  .markdown li {
+    @apply mb-2;
+  }
+
+  .markdown pre {
+    @apply mb-4 rounded bg-gray-100 p-4;
+  }
+
+  .markdown code {
+    @apply rounded bg-gray-200 p-1 text-sm;
+  }
+
+  .markdown button {
+    @apply text-black;
+  }
+}

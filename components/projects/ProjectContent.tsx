@@ -43,7 +43,7 @@ const ProjectContent: React.FC<ProjectContentProps> = ({
 
   return (
     <div>
-      <h2>Info</h2>
+      <h2 className="font-space-grotesk">Info</h2>
       <div className="flex w-full flex-col items-start rounded-md bg-[#c6d3d6] lg:flex-row">
         <div className="flex w-full flex-col rounded-md bg-[#c6d3d6] lg:flex-row">
           <div className="w-full p-4 lg:w-1/2">

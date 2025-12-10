@@ -107,7 +107,7 @@ const MenuSections: React.FC<MenuSectionsProps> = ({
                   : (post.id || index)
                 
                 return (
-                  <div key={index} id={`update-${post.id || index}`}>
+                  <div key={index} id={`update-${numericId}`}>
                     <ProjectUpdate
                       title={post.fieldData?.name || post.fieldData?.title || 'Update'}
                       summary={post.fieldData?.summary || ''}

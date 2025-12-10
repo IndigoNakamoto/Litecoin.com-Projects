@@ -63,12 +63,17 @@ const ProjectMenu: React.FC<ProjectMenuProps> = ({
         className="overflow-x:overlay flex space-x-2 overflow-x-auto whitespace-nowrap py-4"
         style={{ scrollSnapType: 'x mandatory' }}
       >
-        {['Info', 'faq', 'updates', 'posts'].map((item) => (
-          <li
-            className="group flex h-16 items-center justify-center rounded-lg "
-            key={item}
-          >
-            {item === 'updates' && updatesCount === 0 ? null : (
+        {['Info', 'faq', 'updates', 'posts'].map((item) => {
+          // Only show menu items if there's content (Info always shows)
+          if (item === 'faq' && faqCount === 0) return null
+          if (item === 'updates' && updatesCount === 0) return null
+          if (item === 'posts' && commentCount === 0) return null
+
+          return (
+            <li
+              className="group flex h-16 items-center justify-center rounded-lg "
+              key={item}
+            >
               <div className="transform-gpu overflow-hidden rounded-xl transition duration-200">
                 <button
                   onClick={() => handleMenuItemClick(item)}
@@ -123,9 +128,9 @@ const ProjectMenu: React.FC<ProjectMenuProps> = ({
                     )}
                 </button>
               </div>
-            )}
-          </li>
-        ))}
+            </li>
+          )
+        })}
       </ul>
     </nav>
   )

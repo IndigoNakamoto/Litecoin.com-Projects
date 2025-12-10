@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import ProjectHeader from './ProjectHeader'
 import ProjectMenu from './ProjectMenu'
 import MenuSections from './MenuSections'
@@ -25,8 +26,38 @@ export default function ProjectDetailClient({
   updates = [],
   posts = [],
 }: ProjectDetailClientProps) {
+  const searchParams = useSearchParams()
   const [selectedMenuItem, setSelectedMenuItem] = useState<string>('Info')
   const [selectedUpdateId, setSelectedUpdateId] = useState<number | null>(null)
+
+  // Handle URL query parameters for updates
+  useEffect(() => {
+    const updateId = searchParams.get('updateId')
+    
+    if (updateId) {
+      const numericId = parseInt(updateId, 10)
+      if (!isNaN(numericId)) {
+        setSelectedUpdateId(numericId)
+        // Switch to updates tab if there are updates
+        if (updates.length > 0) {
+          setSelectedMenuItem('updates')
+        }
+      }
+    }
+  }, [searchParams, updates.length])
+
+  // Scroll to selected update when it becomes available
+  useEffect(() => {
+    if (selectedUpdateId && selectedMenuItem === 'updates') {
+      // Use setTimeout to ensure DOM is rendered
+      setTimeout(() => {
+        const element = document.getElementById(`update-${selectedUpdateId}`)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }, 100)
+    }
+  }, [selectedUpdateId, selectedMenuItem, updates])
 
   const formatUSD = (value: any) => {
     const num = Number(value)

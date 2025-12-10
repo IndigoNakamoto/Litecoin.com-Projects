@@ -55,7 +55,7 @@ const AsideSection: React.FC<AsideSectionProps> = ({
   return (
     <aside className="top-32 mb-8 flex min-w-[20rem] flex-col space-y-4 rounded-md bg-[#dddddd] p-4 lg:sticky lg:flex-col lg:space-x-4 lg:space-y-0">
       <div className="relative w-full max-w-full">
-        <div className="relative max-h-max min-h-[150px] min-w-[150px] max-w-full">
+        <div className="relative aspect-square w-full min-h-[150px]">
           <Image
             loader={customImageLoader}
             src={coverImage}
@@ -63,11 +63,11 @@ const AsideSection: React.FC<AsideSectionProps> = ({
             fill
             className="rounded-sm"
             priority={true}
+            decoding="async"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             style={{
               objectFit: 'cover',
               objectPosition: '50% 50%',
-              maxWidth: '100%',
             }}
           />
         </div>

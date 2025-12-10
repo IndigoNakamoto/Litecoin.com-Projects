@@ -41,14 +41,22 @@ export async function POST(request: NextRequest) {
       console.error('[postCurrenciesList] Axios error:', error.response?.data || error.message)
       return NextResponse.json(
         {
-          error: error.response?.data?.error || 'Internal Server Error',
+          error: error.response?.data?.error || error.message || 'Internal Server Error',
         },
         { status: error.response?.status || 500 }
       )
     } else {
-      console.error('[postCurrenciesList] Unknown error:', error)
+      // Log the full error details
+      console.error('[postCurrenciesList] Error details:')
+      console.error('  - Message:', error.message)
+      console.error('  - Stack:', error.stack)
+      console.error('  - Full error:', error)
+      
       return NextResponse.json(
-        { error: 'Internal Server Error' },
+        { 
+          error: error.message || 'Internal Server Error',
+          details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        },
         { status: 500 }
       )
     }
