@@ -27,20 +27,20 @@ export default function SubmitPage() {
         </p>
         {/* Donation Policy */}
         <div className="prose max-w-none rounded-xl bg-gray-100 p-6 dark:bg-gray-100">
-          <h2 className="text-xl font-semibold my- font-space-grotesk text-black">Donation Policies</h2>
-          <p className="text-black">
+          <h2 className="text-xl font-semibold my- text-black">Donation Policies</h2>
+          <p className="text-[#404040] my-4">
             The Litecoin Foundation is a registered non-profit organization
             dedicated to advancing Litecoin and blockchain technology through
             open-source development. Your work is vital to our mission.
           </p>
-          <h3 className="text-lg font-semibold my- font-space-grotesk text-black">Service Fee</h3>
-          <p className="text-black">
+          <h3 className="text-lg font-semibold my- text-black">Service Fee</h3>
+          <p className="text-[#404040] my-4">
             A 15% service fee is applied to each donation to cover operational
             costs, including administrative and marketing expenses that help
             us grow our impact.
           </p>
-          <h3 className="text-lg font-semibold my- font-space-grotesk text-black">Fund Allocation</h3>
-          <p className="text-black">
+          <h3 className="text-lg font-semibold my- text-black">Fund Allocation</h3>
+          <p className="text-[#404040] my-4">
             While we always strive to honor the donor&apos;s intent, the Litecoin
             Foundation&apos;s Open Source Fund Council reserves the right to
             reallocate funds between supported projects as needed. This

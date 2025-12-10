@@ -115,7 +115,7 @@ export default function ProjectSubmissionForm() {
         <input
           id="project_name"
           type="text"
-          className={`mt-1 block w-full rounded-none border ${
+          className={`mt-1 block h-10 w-full rounded-none border pl-3 ${
             errors.project_name ? 'border-red-500' : 'border-gray-300'
           } text-black shadow-sm focus:border-[#C5D3D6] focus:ring focus:ring-[#C5D3D6] focus:ring-opacity-50`}
           {...register('project_name', {
@@ -138,7 +138,7 @@ export default function ProjectSubmissionForm() {
         </label>
         <textarea
           id="project_description"
-          className={`mt-1 block h-40 w-full rounded-none border ${
+          className={`mt-1 block h-40 w-full rounded-none border pl-3 ${
             errors.project_description ? 'border-red-500' : 'border-gray-300'
           } text-black shadow-sm focus:border-[#C5D3D6] focus:ring focus:ring-[#C5D3D6] focus:ring-opacity-50`}
           {...register('project_description', {
@@ -164,7 +164,7 @@ export default function ProjectSubmissionForm() {
         </label>
         <select
           id="main_focus"
-          className={`mt-1 block w-full rounded-none border ${
+          className={`mt-1 block h-10 w-full rounded-none border pl-3 ${
             errors.main_focus ? 'border-red-500' : 'border-gray-300'
           } text-black shadow-sm focus:border-[#C5D3D6] focus:ring focus:ring-[#C5D3D6] focus:ring-opacity-50`}
           {...register('main_focus', { required: 'Main Focus is required' })}
@@ -199,7 +199,7 @@ export default function ProjectSubmissionForm() {
         </label>
         <textarea
           id="potential_impact"
-          className={`mt-1 block h-40 w-full rounded-none border ${
+          className={`mt-1 block h-40 w-full rounded-none border pl-3 ${
             errors.potential_impact ? 'border-red-500' : 'border-gray-300'
           } text-black shadow-sm focus:border-[#C5D3D6] focus:ring focus:ring-[#C5D3D6] focus:ring-opacity-50`}
           {...register('potential_impact', {
@@ -224,7 +224,7 @@ export default function ProjectSubmissionForm() {
           id="project_repository"
           type="url"
           placeholder="https://github.com/your-repo"
-          className={`mt-1 block w-full rounded-none border ${
+          className={`mt-1 block h-10 w-full rounded-none border pl-3 ${
             errors.project_repository ? 'border-red-500' : 'border-gray-300'
           } text-black shadow-sm focus:border-[#C5D3D6] focus:ring focus:ring-[#C5D3D6] focus:ring-opacity-50`}
           {...register('project_repository', {
@@ -255,7 +255,7 @@ export default function ProjectSubmissionForm() {
         </label>
         <textarea
           id="social_media_links"
-          className={`mt-1 block w-full rounded-none border ${
+          className={`mt-1 block h-10 w-full rounded-none border pl-3 ${
             errors.social_media_links ? 'border-red-500' : 'border-gray-300'
           } text-black shadow-sm focus:border-[#C5D3D6] focus:ring focus:ring-[#C5D3D6] focus:ring-opacity-50`}
           {...register('social_media_links', {
@@ -288,10 +288,10 @@ export default function ProjectSubmissionForm() {
               <div className="flex w-full space-x-4 border border-gray-300 bg-gray-100 p-1">
                 <button
                   type="button"
-                  className={`flex-grow rounded-lg px-4 py-2 shadow ${
+                  className={`flex-grow rounded-lg px-4 py-2 shadow !text-black ${
                     field.value === 'yes'
-                      ? 'bg-[#C5D3D6] text-[#222222] shadow-md'
-                      : 'bg-white text-[#222222] shadow-md'
+                      ? 'bg-[#C5D3D6] shadow-md'
+                      : 'bg-white shadow-md'
                   }`}
                   onClick={() => field.onChange('yes')}
                 >
@@ -299,10 +299,10 @@ export default function ProjectSubmissionForm() {
                 </button>
                 <button
                   type="button"
-                  className={`flex-grow rounded-lg px-4 py-2 shadow ${
+                  className={`flex-grow rounded-lg px-4 py-2 shadow !text-black ${
                     field.value === 'no'
-                      ? 'bg-gray-300 text-[#222222] shadow-md'
-                      : 'bg-white text-[#222222] shadow-md'
+                      ? 'bg-gray-300 shadow-md'
+                      : 'bg-white shadow-md'
                   }`}
                   onClick={() => field.onChange('no')}
                 >
@@ -310,10 +310,10 @@ export default function ProjectSubmissionForm() {
                 </button>
                 <button
                   type="button"
-                  className={`flex-grow rounded-lg px-4 py-2 shadow ${
+                  className={`flex-grow rounded-lg px-4 py-2 shadow !text-black ${
                     field.value === 'partially'
-                      ? 'bg-[#C5D3D6] text-[#222222] shadow-md'
-                      : 'bg-white text-[#222222] shadow-md'
+                      ? 'bg-[#C5D3D6] shadow-md'
+                      : 'bg-white shadow-md'
                   }`}
                   onClick={() => field.onChange('partially')}
                 >
@@ -334,7 +334,7 @@ export default function ProjectSubmissionForm() {
                   <input
                     id="open_source_license"
                     type="text"
-                    className={`mt-1 block w-full rounded-none border ${
+                    className={`mt-1 block h-10 w-full rounded-none border pl-3 ${
                       errors.open_source_license
                         ? 'border-red-500'
                         : 'border-gray-300'
@@ -373,7 +373,7 @@ export default function ProjectSubmissionForm() {
                   </label>
                   <textarea
                     id="partially_open_source"
-                    className={`mt-1 block w-full rounded-none border ${
+                    className={`mt-1 block h-10 w-full rounded-none border pl-3 ${
                       errors.partially_open_source
                         ? 'border-red-500'
                         : 'border-gray-300'
@@ -413,7 +413,7 @@ export default function ProjectSubmissionForm() {
         </label>
         <textarea
           id="proposed_budget"
-          className={`mt-1 block w-full rounded-none border ${
+          className={`mt-1 block h-10 w-full rounded-none border pl-3 ${
             errors.proposed_budget ? 'border-red-500' : 'border-gray-300'
           } text-black shadow-sm focus:border-[#C5D3D6] focus:ring focus:ring-[#C5D3D6] focus:ring-opacity-50`}
           {...register('proposed_budget', {
@@ -444,10 +444,10 @@ export default function ProjectSubmissionForm() {
               <div className="flex w-full space-x-4 border border-gray-300 bg-gray-100 p-1">
                 <button
                   type="button"
-                  className={`flex-grow rounded-lg px-4 py-2 shadow ${
+                  className={`flex-grow rounded-lg px-4 py-2 shadow !text-black ${
                     field.value === 'yes'
-                      ? 'bg-[#C5D3D6] text-[#222222] shadow-md'
-                      : 'bg-white text-[#222222] shadow-md'
+                      ? 'bg-[#C5D3D6] shadow-md'
+                      : 'bg-white shadow-md'
                   }`}
                   onClick={() => field.onChange('yes')}
                 >
@@ -455,10 +455,10 @@ export default function ProjectSubmissionForm() {
                 </button>
                 <button
                   type="button"
-                  className={`flex-grow rounded-lg px-4 py-2 shadow ${
+                  className={`flex-grow rounded-lg px-4 py-2 shadow !text-black ${
                     field.value === 'no'
-                      ? 'bg-gray-300 text-[#222222] shadow-md'
-                      : 'bg-white text-[#222222] shadow-md'
+                      ? 'bg-gray-300 shadow-md'
+                      : 'bg-white shadow-md'
                   }`}
                   onClick={() => field.onChange('no')}
                 >
@@ -482,7 +482,7 @@ export default function ProjectSubmissionForm() {
                   <input
                     type="text"
                     id="prior_funding_details"
-                    className={`mt-1 block w-full rounded-none border ${
+                    className={`mt-1 block h-10 w-full rounded-none border pl-3 ${
                       errors.prior_funding_details
                         ? 'border-red-500'
                         : 'border-gray-300'
@@ -528,7 +528,7 @@ export default function ProjectSubmissionForm() {
         <input
           id="your_name"
           type="text"
-          className={`mt-1 block w-full rounded-none border ${
+          className={`mt-1 block h-10 w-full rounded-none border pl-3 ${
             errors.your_name ? 'border-red-500' : 'border-gray-300'
           } text-black shadow-sm focus:border-[#C5D3D6] focus:ring focus:ring-[#C5D3D6] focus:ring-opacity-50`}
           {...register('your_name', { required: 'Your Name is required' })}
@@ -550,7 +550,7 @@ export default function ProjectSubmissionForm() {
         <input
           id="email"
           type="email"
-          className={`mt-1 block w-full rounded-none border ${
+          className={`mt-1 block h-10 w-full rounded-none border pl-3 ${
             errors.email ? 'border-red-500' : 'border-gray-300'
           } text-black shadow-sm focus:border-[#C5D3D6] focus:ring focus:ring-[#C5D3D6] focus:ring-opacity-50`}
           {...register('email', {
@@ -586,10 +586,10 @@ export default function ProjectSubmissionForm() {
               <div className="flex w-full space-x-4 border border-gray-300 bg-gray-100 p-1">
                 <button
                   type="button"
-                  className={`flex-grow rounded-lg px-4 py-2 shadow ${
+                  className={`flex-grow rounded-lg px-4 py-2 shadow !text-black ${
                     field.value === 'yes'
-                      ? 'bg-[#C5D3D6] text-[#222222] shadow-md'
-                      : 'bg-white text-[#222222] shadow-md'
+                      ? 'bg-[#C5D3D6] shadow-md'
+                      : 'bg-white shadow-md'
                   }`}
                   onClick={() => field.onChange('yes')}
                 >
@@ -597,10 +597,10 @@ export default function ProjectSubmissionForm() {
                 </button>
                 <button
                   type="button"
-                  className={`flex-grow rounded-lg px-4 py-2 shadow ${
+                  className={`flex-grow rounded-lg px-4 py-2 shadow !text-black ${
                     field.value === 'no'
-                      ? 'bg-gray-300 text-[#222222] shadow-md'
-                      : 'bg-white text-[#222222] shadow-md'
+                      ? 'bg-gray-300 shadow-md'
+                      : 'bg-white shadow-md'
                   }`}
                   onClick={() => field.onChange('no')}
                 >
@@ -629,7 +629,7 @@ export default function ProjectSubmissionForm() {
                   <input
                     id="other_lead"
                     type="text"
-                    className={`mt-1 block w-full rounded-none border ${
+                    className={`mt-1 block h-10 w-full rounded-none border pl-3 ${
                       errors.other_lead ? 'border-red-500' : 'border-gray-300'
                     } text-black shadow-sm focus:border-[#C5D3D6] focus:ring focus:ring-[#C5D3D6] focus:ring-opacity-50`}
                     {...register('other_lead', {
@@ -665,7 +665,7 @@ export default function ProjectSubmissionForm() {
           id="personal_github"
           type="url"
           placeholder="https://github.com/your-username"
-          className={`mt-1 block w-full rounded-none border ${
+          className={`mt-1 block h-10 w-full rounded-none border pl-3 ${
             errors.personal_github ? 'border-red-500' : 'border-gray-300'
           } text-black shadow-sm focus:border-[#C5D3D6] focus:ring focus:ring-[#C5D3D6] focus:ring-opacity-50`}
           {...register('personal_github', {
@@ -691,7 +691,7 @@ export default function ProjectSubmissionForm() {
         </label>
         <textarea
           id="other_contact_details"
-          className={`mt-1 block w-full rounded-none border ${
+          className={`mt-1 block h-10 w-full rounded-none border pl-3 ${
             errors.other_contact_details ? 'border-red-500' : 'border-gray-300'
           } text-black shadow-sm focus:border-[#C5D3D6] focus:ring focus:ring-[#C5D3D6] focus:ring-opacity-50`}
           {...register('other_contact_details')}
@@ -713,7 +713,7 @@ export default function ProjectSubmissionForm() {
         </label>
         <textarea
           id="prior_contributions"
-          className={`mt-1 block h-40 w-full rounded-none border ${
+          className={`mt-1 block h-40 w-full rounded-none border pl-3 ${
             errors.prior_contributions ? 'border-red-500' : 'border-gray-300'
           } text-black shadow-sm focus:border-[#C5D3D6] focus:ring focus:ring-[#C5D3D6] focus:ring-opacity-50`}
           {...register('prior_contributions')}
@@ -735,7 +735,7 @@ export default function ProjectSubmissionForm() {
         </label>
         <textarea
           id="references"
-          className={`mt-1 block w-full rounded-none border ${
+          className={`mt-1 block h-10 w-full rounded-none border pl-3 ${
             errors.references ? 'border-red-500' : 'border-gray-300'
           } text-black shadow-sm focus:border-[#C5D3D6] focus:ring focus:ring-[#C5D3D6] focus:ring-opacity-50`}
           {...register('references', { required: 'References are required' })}

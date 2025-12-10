@@ -1,6 +1,5 @@
 import { Metadata } from 'next'
 import SubmittedSection from '@/components/ui/SubmittedSection'
-import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Litecoin.net | Project Submitted',
@@ -12,17 +11,17 @@ export default function SubmittedPage() {
   return (
     <SubmittedSection title="Thank You for Your Submission!">
       <div className="my-auto mt-10 max-w-2xl space-y-8 text-center xs:my-4">
-        <p>
-          We've received your project submission and are excited to review
+        <p className='text-[#404040]'>
+          We&apos;ve received your project submission and are excited to review
           your application. The Litecoin Foundation appreciates your
           initiative and your commitment to strengthening the Litecoin
           ecosystem.
         </p>
-        <p>
-          Our team will carefully review the details you've provided. You can
-          expect to hear from us within the next 7-10 business days regarding
-          the status of your submission. We'll reach out if we have any
-          questions.
+        <p className='text-[#404040]'>
+          Our team will carefully review the details you&apos;ve provided. Please note
+          that due to the volume of submissions, we may not be able to respond
+          to all applications. We&apos;ll reach out if we have any questions or if
+          your project is selected for further consideration.
         </p>
       </div>
     </SubmittedSection>
