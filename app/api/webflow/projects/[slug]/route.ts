@@ -9,7 +9,6 @@ export async function GET(
     // Handle both sync and async params (Next.js 15+ uses Promise)
     const resolvedParams = params instanceof Promise ? await params : params
     const slug = resolvedParams.slug
-    console.log(`[API Route] Fetching project with slug: "${slug}"`)
     
     const project = await getProjectBySlug(slug)
 
@@ -21,7 +20,6 @@ export async function GET(
       )
     }
 
-    console.log(`[API Route] Successfully returning project: ${project.name}`)
     return NextResponse.json({ project })
   } catch (error: any) {
     console.error('[API Route] Error fetching project:', error)

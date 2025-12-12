@@ -12,3 +12,7 @@ CREATE TABLE IF NOT EXISTS "token" (
 -- Add a comment to the table
 COMMENT ON TABLE "token" IS 'Stores TGB API authentication tokens';
 
+
+
+
+

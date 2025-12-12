@@ -63,11 +63,6 @@ export async function getAllActiveContributors(): Promise<Contributor[]> {
     (contributor) => !contributor.isDraft && !contributor.isArchived
   )
 
-  // Debug: Log first contributor to see structure
-  if (activeContributors.length > 0) {
-    console.log('Sample contributor from Webflow:', JSON.stringify(activeContributors[0], null, 2))
-  }
-
   // Transform to our Contributor type
   const contributors: Contributor[] = activeContributors.map((contributor) => {
     // Name is in fieldData (like projects), but check top-level as fallback

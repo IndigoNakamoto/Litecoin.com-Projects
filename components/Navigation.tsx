@@ -159,10 +159,6 @@ const Navigation = () => {
   const socialIconTextColor = interpolateColor('#222222', '#ffffff', bgOpacity) // New color for social icons
   const logoColor = bgOpacity < 0.5 ? '#000000' : '#ffffff'
 
-  useEffect(() => {
-    // console.log('Scroll Position:', scrollPosition, 'bgOpacity:', bgOpacity)
-  }, [scrollPosition, bgOpacity])
-
   return (
     <>
       <header

@@ -101,7 +101,6 @@ const Project: NextPage<SingleProjectPageProps> = ({
 
   // Log coverImage when it changes
   useEffect(() => {
-    console.log('Litecoin Raised: ', litecoinRaised)
     // console.log('Project cover image: ', coverImage)
   }, [coverImage])
 
@@ -551,12 +550,8 @@ export const getStaticProps: GetStaticProps = async (context) => {
   const { params } = context
   const slug = params?.slug as string
 
-  console.log(`[getStaticProps] Fetching project with slug: "${slug}"`)
-
   // Fetch project data from the API
   const project = await getProjectBySlug(slug)
-  
-  console.log(`[getStaticProps] Project found:`, project ? `Yes (${project.fieldData.name})` : 'No')
 
   // Handle the case where the project is not found
   if (!project) {

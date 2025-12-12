@@ -13,8 +13,6 @@ export default async function handler(
     // Filter out projects if isDraft is true (Note: Your original code did not filter isArchived)
     const filteredProjects = projects.filter((project) => !project.isDraft)
 
-    console.log('Fetched projects from Webflow:', filteredProjects) // Add this line for debugging
-
     // Respond with the filtered projects data (ONLY ONCE)
     res.status(200).json({ projects: filteredProjects })
   } catch (error) {

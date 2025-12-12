@@ -57,7 +57,6 @@ export async function getFAQsByProjectId(projectId: string): Promise<FAQItem[]> 
     }
   } catch (error) {
     // KV not available, continue
-    console.log(`[getFAQsByProjectId] Cache not available, fetching from Webflow`)
   }
 
   const apiToken = process.env.WEBFLOW_API_TOKEN

@@ -34,17 +34,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(cachedData)
     }
 
-    // Get the project by slug to get its ID
-    const project = await prisma.project.findFirst({
-      where: { slug },
-      select: { id: true },
-    })
-
-    if (!project) {
-      // Try fetching from Webflow if not in database
-      // For now, return empty array if project not found
-      return NextResponse.json([])
-    }
+    // Note: Projects are stored in Webflow, not in the database
+    // We can skip the database check and proceed directly to matching donations
+    // If the project doesn't exist, the matching donations query will return empty anyway
 
     // Note: MatchingDonationLog may not exist in the new schema
     // This is a placeholder - you may need to create this model or use a different approach
@@ -111,11 +103,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json([])
     }
 
-    // Create a map of donorId to totalMatchedAmount
+    // Create a map of donorId to totalMatchedAmount with proper precision
     const totalMatchedAmountMap: { [donorId: string]: number } = {}
     totalMatchedAmounts.forEach((item) => {
-      totalMatchedAmountMap[item.donorId] =
-        item._sum.matchedAmount?.toNumber() ?? 0
+      const amount = item._sum.matchedAmount?.toNumber() ?? 0
+      // Round to 2 decimal places to match display precision
+      totalMatchedAmountMap[item.donorId] = Math.round(amount * 100) / 100
     })
 
     // For each donor, retrieve the total matched amount from the map

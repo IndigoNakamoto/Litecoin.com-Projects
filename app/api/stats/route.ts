@@ -1,36 +1,41 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { kv } from '@/lib/kv'
 import { getAllPublishedProjects } from '@/services/webflow/projects'
+
+export const runtime = 'nodejs'
 
 interface Stats {
   projectsSupported: number
   totalPaid: number
   donationsRaised: number
-  donationsMatched: number
+  donationsMatched: number | null
 }
 
-export async function GET() {
-  const cacheKey = 'stats:all'
+export async function GET(request: NextRequest) {
+  // Bump cache key to avoid serving previously cached incorrect values
+  const cacheKey = 'stats:all:v3'
+  const debug =
+    process.env.NODE_ENV !== 'production' &&
+    request.nextUrl.searchParams.get('debug') === '1'
 
   try {
     // Try to fetch the cached stats
     try {
       const cachedStats = await kv.get<Stats>(cacheKey)
-      if (cachedStats) {
+      if (cachedStats && !debug) {
         return NextResponse.json(cachedStats, {
           headers: {
             'Cache-Control': 's-maxage=600, stale-while-revalidate',
           },
         })
       }
-    } catch (error) {
+    } catch {
       // KV not available, continue
-      console.log('[stats] Cache not available, fetching fresh data')
     }
 
     // If not cached, fetch the data
     const projects = await getAllPublishedProjects()
-    
+
     // Calculate total paid from projects
     const totalPaid = projects.reduce((acc, project) => {
       const paid = project.totalPaid || 0
@@ -39,101 +44,365 @@ export async function GET() {
 
     // Calculate projects supported - use project count (original behavior)
     // If you want to count only projects with donations, uncomment the try-catch below
-    let projectsSupported = projects.length
-    
-    // Optional: Count only projects that have received donations
-    // try {
-    //   // @ts-ignore - Donation model may exist in database but not in schema
-    //   const grouped = await prisma.donation.groupBy({
-    //     by: ['projectSlug'],
-    //   })
-    //   projectsSupported = grouped.length
-    // } catch (error) {
-    //   // If Donation model doesn't exist, fall back to project count
-    //   console.warn('[stats] Donation model not found, using project count')
-    //   projectsSupported = projects.length
-    // }
+    const projectsSupported = projects.length
 
     // Calculate donations raised and matched
-    // Use lazy import to avoid Prisma initialization errors if not configured
+    // Use lazy import so the route still works even if Prisma isn't configured yet.
     let donationsRaised = 0
-    let donationsMatched = 0
-    
+    let donationsMatched: number | null = null
+
+    const debugInfo: Record<string, unknown> | undefined = debug
+      ? {
+          version: 'stats-debug-v5',
+          used: null,
+          tables: null,
+          donationPledge: null,
+          legacyDonations: null,
+          legacyMatching: null,
+          errors: [],
+        }
+      : undefined
+
     try {
-      // Dynamically import prisma to avoid initialization errors at module load time
       const { prisma } = await import('@/lib/prisma')
-      
-      // Use bracket notation to safely access models that might not exist in schema
-      // @ts-ignore - Donation model may exist in database but not in schema
-      const donationModel = (prisma as any)['donation']
-      // @ts-ignore - MatchingDonationLog model may exist in database but not in schema
-      const matchingDonationLogModel = (prisma as any)['matchingDonationLog']
-      
-      if (donationModel) {
-        const donationsRaisedResult = await donationModel.aggregate({
-          _sum: {
-            valueAtDonationTimeUSD: true,
-          },
-          where: {
-            status: 'Complete',
-            valueAtDonationTimeUSD: {
-              gte: 2,
-            },
-          },
-        })
-        donationsRaised =
-          donationsRaisedResult._sum.valueAtDonationTimeUSD?.toNumber() ?? 0
 
-        // Calculate donations matched
-        const donations = await donationModel.findMany({
-          where: {
-            status: 'Complete',
-            valueAtDonationTimeUSD: {
-              gte: 2,
-            },
-          },
-          select: {
-            id: true,
-          },
-        })
+      if (debugInfo) {
+        try {
+          const conn = await prisma.$queryRaw<
+            { current_database: string; current_schema: string; current_user: string }[]
+          >`
+            SELECT
+              current_database() AS current_database,
+              current_schema() AS current_schema,
+              current_user AS current_user
+          `
+          debugInfo.connection = conn?.[0] ?? null
+          debugInfo.shadowDb =
+            (conn?.[0]?.current_database || '').startsWith('prisma_migrate_shadow_db_') ||
+            (conn?.[0]?.current_database || '').includes('shadow_db')
 
-        const donationIds = donations.map((d: any) => d.id)
-
-        if (donationIds.length > 0 && matchingDonationLogModel) {
-          const donationsMatchedResult = await matchingDonationLogModel.aggregate({
-            _sum: {
-              matchedAmount: true,
-            },
-            where: {
-              donationId: {
-                in: donationIds,
-              },
-            },
+          const tables = await prisma.$queryRaw<{ table_name: string }[]>`
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_schema = 'public'
+            ORDER BY table_name
+          `
+          debugInfo.tables = tables.map((t) => t.table_name)
+        } catch (e) {
+          ;(debugInfo.errors as unknown[]).push({
+            where: 'information_schema.tables',
+            message: e instanceof Error ? e.message : String(e),
           })
-
-          donationsMatched =
-            donationsMatchedResult._sum.matchedAmount?.toNumber() ?? 0
         }
       }
-    } catch (error: any) {
-      // Silently fail if Prisma is not configured or models don't exist
-      // This is expected during migration or if Prisma isn't set up
-      const isExpectedError = 
-        error?.code === 'P2001' || 
-        error?.code === 'P2025' ||
-        error?.name === 'PrismaClientConstructorValidationError' ||
-        error?.message?.includes('Unknown model') ||
-        error?.message?.includes('does not exist') ||
-        error?.message?.includes('prisma.donation') ||
-        error?.message?.includes('prisma.matchingDonationLog') ||
-        error?.message?.includes('Cannot read property') ||
-        error?.message?.includes('adapter') ||
-        error?.message?.includes('accelerateUrl')
-      
-      if (!isExpectedError) {
-        console.warn('[stats] Error calculating donations:', error?.message || error)
+
+      // Prefer legacy tables if they still exist (keeps parity with the old project),
+      // otherwise fall back to the new `DonationPledge` model.
+      try {
+        if (debugInfo) {
+          try {
+            const donationColumns = await prisma.$queryRaw<
+              { column_name: string; data_type: string; is_nullable: string }[]
+            >`
+              SELECT column_name, data_type, is_nullable
+              FROM information_schema.columns
+              WHERE table_schema = 'public'
+                AND table_name = 'donations'
+              ORDER BY ordinal_position
+            `
+
+            const donationCounts = await prisma.$queryRaw<
+              {
+                total: number
+                processed_true: number
+                success_true: number
+                vat_usd_not_null: number
+              }[]
+            >`
+              SELECT
+                COUNT(*)::int AS total,
+                SUM(CASE WHEN processed = true THEN 1 ELSE 0 END)::int AS processed_true,
+                SUM(CASE WHEN success = true THEN 1 ELSE 0 END)::int AS success_true,
+                SUM(CASE WHEN value_at_donation_time_usd IS NOT NULL THEN 1 ELSE 0 END)::int AS vat_usd_not_null
+              FROM donations
+            `
+
+            const processedBreakdown = await prisma.$queryRaw<
+              { processed: boolean | null; count: number }[]
+            >`
+              SELECT processed, COUNT(*)::int AS count
+              FROM donations
+              GROUP BY processed
+              ORDER BY processed
+            `
+
+            const statusBreakdown = await prisma.$queryRaw<
+              { status: string | null; count: number }[]
+            >`
+              SELECT status, COUNT(*)::int AS count
+              FROM donations
+              GROUP BY status
+              ORDER BY count DESC
+              LIMIT 20
+            `
+
+            const sample = await prisma.$queryRaw<
+              {
+                id: number | string | null
+                processed: boolean | null
+                status: string | null
+                donation_type: string | null
+                pledge_id: string | null
+                value_at_donation_time_usd: number | null
+              }[]
+            >`
+              SELECT
+                id,
+                processed,
+                status,
+                donation_type::text as donation_type,
+                pledge_id,
+                value_at_donation_time_usd
+              FROM donations
+              ORDER BY id DESC
+              LIMIT 5
+            `
+
+            const rls = await prisma.$queryRaw<
+              { relrowsecurity: boolean; relforcerowsecurity: boolean }[]
+            >`
+              SELECT c.relrowsecurity, c.relforcerowsecurity
+              FROM pg_class c
+              JOIN pg_namespace n ON n.oid = c.relnamespace
+              WHERE n.nspname = 'public' AND c.relname = 'donations'
+              LIMIT 1
+            `
+
+            const policies = await prisma.$queryRaw<
+              {
+                policyname: string
+                permissive: string
+                roles: string[]
+                cmd: string
+                qual: string | null
+                with_check: string | null
+              }[]
+            >`
+              SELECT
+                policyname,
+                permissive::text as permissive,
+                roles::text[] as roles,
+                cmd::text as cmd,
+                qual,
+                with_check
+              FROM pg_policies
+              WHERE schemaname = 'public' AND tablename = 'donations'
+              ORDER BY policyname
+            `
+
+            debugInfo.legacyDonations = {
+              ...(typeof debugInfo.legacyDonations === 'object' && debugInfo.legacyDonations
+                ? (debugInfo.legacyDonations as object)
+                : {}),
+              columns: donationColumns,
+              counts: donationCounts?.[0] ?? null,
+              rls: rls?.[0] ?? null,
+              policies,
+              processedBreakdown,
+              statusBreakdown,
+              sample,
+            }
+          } catch (e) {
+            ;(debugInfo.errors as unknown[]).push({
+              where: 'debug:donations-introspection',
+              message: e instanceof Error ? e.message : String(e),
+            })
+          }
+        }
+
+        const rows = await prisma.$queryRaw<
+          {
+            sum_success: number | null
+            sum_processed: number | null
+            sum_complete: number | null
+            sum_any: number | null
+          }[]
+        >`
+          SELECT
+            SUM(
+              CASE WHEN success = true THEN
+                COALESCE(
+                  value_at_donation_time_usd,
+                  "pledgeAmount",
+                  amount,
+                  gross_amount,
+                  net_value_amount,
+                  payout_amount,
+                  0
+                )
+              ELSE 0 END
+            )::float AS sum_success,
+            SUM(
+              CASE WHEN processed = true THEN
+                COALESCE(
+                  value_at_donation_time_usd,
+                  "pledgeAmount",
+                  amount,
+                  gross_amount,
+                  net_value_amount,
+                  payout_amount,
+                  0
+                )
+              ELSE 0 END
+            )::float AS sum_processed,
+            SUM(
+              CASE WHEN status IN ('Complete', 'Advanced') THEN
+                COALESCE(
+                  value_at_donation_time_usd,
+                  "pledgeAmount",
+                  amount,
+                  gross_amount,
+                  net_value_amount,
+                  payout_amount,
+                  0
+                )
+              ELSE 0 END
+            )::float AS sum_complete,
+            SUM(
+              COALESCE(
+                value_at_donation_time_usd,
+                "pledgeAmount",
+                amount,
+                gross_amount,
+                net_value_amount,
+                payout_amount,
+                0
+              )
+            )::float AS sum_any
+          FROM donations
+        `
+
+        const sumSuccess = rows?.[0]?.sum_success ?? 0
+        const sumProcessed = rows?.[0]?.sum_processed ?? 0
+        const sumComplete = rows?.[0]?.sum_complete ?? 0
+        const sumAny = rows?.[0]?.sum_any ?? 0
+
+        if (debugInfo) {
+          const prev =
+            typeof debugInfo.legacyDonations === 'object' && debugInfo.legacyDonations
+              ? (debugInfo.legacyDonations as Record<string, unknown>)
+              : {}
+          debugInfo.legacyDonations = {
+            ...prev,
+            sumSuccess,
+            sumProcessed,
+            sumComplete,
+            sumAny,
+          }
+        }
+
+        // Choose the best available sum
+        // (success is often the most reliable across donation types)
+        if (sumSuccess > 0) {
+          donationsRaised = sumSuccess
+          if (debugInfo) debugInfo.used = 'legacy:donations(success)'
+        } else if (sumProcessed > 0) {
+          donationsRaised = sumProcessed
+          if (debugInfo) debugInfo.used = 'legacy:donations(processed)'
+        } else if (sumComplete > 0) {
+          donationsRaised = sumComplete
+          if (debugInfo) debugInfo.used = 'legacy:donations(complete)'
+        } else if (sumAny > 0) {
+          donationsRaised = sumAny
+          if (debugInfo) debugInfo.used = 'legacy:donations(any)'
+        }
+      } catch {
+        // Table doesn't exist (or column differs) in the new schema — ignore.
       }
-      // Values already default to 0, so no need to set them here
+
+      if (donationsRaised === 0) {
+        const raised = await prisma.donationPledge.aggregate({
+          _sum: { pledgeAmount: true },
+          where: {
+            // The UI formats USD; without an exchange-rate table we can only
+            // safely sum USD-denominated pledges here. We also include fiat
+            // pledges defensively in case the currency casing/format varies.
+            OR: [
+              { pledgeCurrency: { equals: 'USD', mode: 'insensitive' } },
+              { donationType: 'fiat' },
+            ],
+            // If pledgeId is present, it generally indicates a processed pledge
+            // (fiat). Leaving it optional keeps behavior permissive.
+          },
+        })
+        donationsRaised = raised._sum.pledgeAmount ?? 0
+        if (debugInfo) {
+          debugInfo.donationPledge = { sum: donationsRaised }
+          debugInfo.used = 'prisma:donationPledge'
+        }
+      }
+
+      // Matching donations: try legacy table if present. (New schema doesn’t
+      // currently model matching logs.)
+      try {
+        if (debugInfo) {
+          try {
+            const matchingColumns = await prisma.$queryRaw<
+              { column_name: string; data_type: string; is_nullable: string }[]
+            >`
+              SELECT column_name, data_type, is_nullable
+              FROM information_schema.columns
+              WHERE table_schema = 'public'
+                AND table_name = 'MatchingDonationLog'
+              ORDER BY ordinal_position
+            `
+
+            const matchingCount = await prisma.$queryRaw<{ total: number }[]>`
+              SELECT COUNT(*)::int AS total
+              FROM "MatchingDonationLog"
+            `
+
+            const sample = await prisma.$queryRaw<Record<string, unknown>[]>`
+              SELECT *
+              FROM "MatchingDonationLog"
+              ORDER BY 1 DESC
+              LIMIT 3
+            `
+
+            debugInfo.legacyMatching = {
+              columns: matchingColumns,
+              counts: matchingCount?.[0] ?? null,
+              sample,
+            }
+          } catch (e) {
+            ;(debugInfo.errors as unknown[]).push({
+              where: 'debug:MatchingDonationLog-introspection',
+              message: e instanceof Error ? e.message : String(e),
+            })
+          }
+        }
+
+        // Your DB uses camelCase columns ("matchedAmount") as shown in debug output.
+        const matchedRows = await prisma.$queryRaw<{ total: number | null }[]>`
+          SELECT SUM("matchedAmount")::float AS total
+          FROM "MatchingDonationLog"
+        `
+        donationsMatched = matchedRows?.[0]?.total ?? 0
+
+        if (debugInfo) {
+          const prev =
+            typeof debugInfo.legacyMatching === 'object' && debugInfo.legacyMatching
+              ? (debugInfo.legacyMatching as Record<string, unknown>)
+              : {}
+          debugInfo.legacyMatching = { ...prev, sum: donationsMatched }
+        }
+      } catch {
+        donationsMatched = null
+      }
+    } catch {
+      // Prisma not configured / database unavailable: keep defaults.
+      donationsRaised = 0
+      donationsMatched = null
     }
 
     const stats: Stats = {
@@ -146,8 +415,12 @@ export async function GET() {
     // Cache the stats for 10 minutes
     try {
       await kv.set(cacheKey, stats, { ex: 600 })
-    } catch (error) {
+    } catch {
       // KV not available, continue
+    }
+
+    if (debugInfo) {
+      return NextResponse.json({ ...stats, _debug: debugInfo }, { status: 200 })
     }
 
     return NextResponse.json(stats, {
@@ -155,7 +428,7 @@ export async function GET() {
         'Cache-Control': 's-maxage=600, stale-while-revalidate',
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[stats] Error fetching stats:', error)
     return NextResponse.json(
       { error: 'Internal Server Error' },

@@ -20,10 +20,7 @@ export async function GET() {
 
     const client = createWebflowClient(apiToken)
     
-    console.log('[DEBUG API] Fetching all projects from Webflow...')
     const allProjects = await listCollectionItems<WebflowProject>(client, collectionId)
-    
-    console.log(`[DEBUG API] Fetched ${allProjects.length} projects`)
     
     // Get all slugs and their status
     const projectsInfo = allProjects.map((p) => ({

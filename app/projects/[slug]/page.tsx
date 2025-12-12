@@ -12,7 +12,6 @@ export default async function ProjectPage({
 }) {
   // Handle both sync and async params (Next.js 15+ uses Promise)
   const resolvedParams = params instanceof Promise ? await params : params
-  console.log(`[ProjectPage] Received slug: "${resolvedParams.slug}"`)
   
   let project
   let faqs: FAQItem[] = []
@@ -27,7 +26,7 @@ export default async function ProjectPage({
       notFound()
     }
     
-    console.log(`[ProjectPage] Project found: ${project.name}`)
+
 
     // Fetch FAQs, updates, and posts from APIs
     const [fetchedFaqs, fetchedUpdates, fetchedPosts] = await Promise.all([
@@ -39,8 +38,6 @@ export default async function ProjectPage({
     faqs = fetchedFaqs
     updates = fetchedUpdates
     posts = fetchedPosts
-
-    console.log(`[ProjectPage] Fetched ${faqs.length} FAQs, ${updates.length} updates, ${posts.length} posts`)
   } catch (error) {
     console.error('[ProjectPage] Error rendering page:', error)
     if (error instanceof Error) {

@@ -61,7 +61,6 @@ export async function getUpdatesByProjectId(projectId: string): Promise<Update[]
     }
   } catch (error) {
     // KV not available, continue
-    console.log(`[getUpdatesByProjectId] Cache not available, fetching from Webflow`)
   }
 
   const apiToken = process.env.WEBFLOW_API_TOKEN
@@ -84,7 +83,6 @@ export async function getUpdatesByProjectId(projectId: string): Promise<Update[]
       try {
         const cached = await kv.get<Update[]>(cacheKey)
         if (cached) {
-          console.log(`[getUpdatesByProjectId] Using cached updates`)
           return cached
         }
       } catch (_cacheError) {
@@ -120,7 +118,6 @@ export async function getUpdatesByProjectId(projectId: string): Promise<Update[]
     try {
       const cached = await kv.get<Update[]>(cacheKey)
       if (cached) {
-        console.log(`[getUpdatesByProjectId] Using cached updates`)
         return cached
       }
     } catch (_cacheError) {

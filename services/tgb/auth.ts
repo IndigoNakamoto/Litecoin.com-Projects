@@ -122,7 +122,6 @@ async function loginAndSaveTokens(): Promise<string> {
       throw new Error('GIVING_BLOCK_LOGIN and GIVING_BLOCK_PASSWORD environment variables must be set')
     }
 
-    console.log('[TGB Auth] Attempting login to TGB API...')
     const response = await axios.post(`${TGB_API_BASE}/login`, {
       login,
       password,
@@ -134,7 +133,6 @@ async function loginAndSaveTokens(): Promise<string> {
     }
 
     const { accessToken, refreshToken } = response.data.data
-    console.log('[TGB Auth] Successfully obtained access token')
 
     const expiresAt = addSeconds(new Date(), 2 * 60 * 60) // Token valid for 2 hours
 

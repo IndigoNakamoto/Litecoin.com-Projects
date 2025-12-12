@@ -716,8 +716,6 @@ const calculateRemainingAmount = async (
 export const getActiveMatchingDonors = async (): Promise<
   MatchingDonorWithRemainingAmount[]
 > => {
-  console.log('webflow get active matching donors')
-
   // Directly fetch donors without cache
   const donors = await listCollectionItems<MatchingDonor>(
     COLLECTION_ID_MATCHING_DONORS
@@ -804,16 +802,6 @@ export const getProjectBySlug = async (
   // Webflow API v2 doesn't support slug filtering via query params
   const allProjects = await listCollectionItems<Project>(COLLECTION_ID_PROJECTS)
   
-  // Debug: Log available slugs
-  const availableSlugs = allProjects.map(p => ({
-    slug: p.fieldData.slug,
-    isDraft: p.isDraft,
-    isArchived: p.isArchived,
-    name: p.fieldData.name
-  }))
-  console.log(`[getProjectBySlug] Looking for slug: "${slug}"`)
-  console.log(`[getProjectBySlug] Available projects:`, availableSlugs.map(p => `${p.slug} (draft: ${p.isDraft}, archived: ${p.isArchived})`).join(', '))
-  
   const project = allProjects.find(
     (p) => p.fieldData.slug === slug && !p.isDraft && !p.isArchived
   )
@@ -828,8 +816,6 @@ export const getProjectBySlug = async (
     }
     return undefined // Project not found or is draft/archived
   }
-  
-  console.log(`[getProjectBySlug] Found project: ${project.fieldData.name} (slug: ${project.fieldData.slug})`)
 
   // Fetch the status label by mapping the ID
   const statusLabel = await getLabel(

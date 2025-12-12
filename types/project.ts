@@ -37,6 +37,8 @@ export interface Project {
   bitcoinContributors?: Contributor[]
   litecoinContributors?: Contributor[]
   advocates?: Contributor[]
+  litecoinRaised?: number
+  litecoinPaid?: number
 }
 
 export interface ProjectSummary {

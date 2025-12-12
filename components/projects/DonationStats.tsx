@@ -44,11 +44,25 @@ const StandardStats: React.FC<
   totalPaid = 0,
 }) => {
   const communityRaisedUSD = addressStats.funded_txo_sum
-  const totalMatched = matchingDonors.reduce(
-    (sum, donor) => sum + donor.totalMatchedAmount,
+  // Ensure matchingDonors is an array before calling reduce
+  const donorsArray = Array.isArray(matchingDonors) ? matchingDonors : []
+  const totalMatched = donorsArray.reduce(
+    (sum, donor) => {
+      // Extract totalMatchedAmount from donor object
+      // Handle both direct property access and nested access
+      let amount = 0
+      if (donor && typeof donor === 'object') {
+        if ('totalMatchedAmount' in donor) {
+          amount = Number(donor.totalMatchedAmount) || 0
+        }
+      }
+      // Use Decimal-like precision by rounding to avoid floating point errors
+      return Math.round((sum + amount) * 100) / 100
+    },
     0
   )
-  const grandTotalUSD = communityRaisedUSD + totalMatched
+  // Round grand total to avoid floating point precision issues
+  const grandTotalUSD = Math.round((communityRaisedUSD + totalMatched) * 100) / 100
 
   const formattedCommunityLtc = litecoinRaised.toFixed(2)
   const formattedLtcPaid = litecoinPaid.toFixed(2)

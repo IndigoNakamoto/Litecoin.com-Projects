@@ -34,7 +34,7 @@ const ProjectContributors: React.FC<ProjectContributorsProps> = ({
   return (
     <div className="mt-8">
       <h2 className="mb-4 text-2xl font-bold">Contributors</h2>
-      <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+      <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
         {uniqueContributors.map((contributor) => (
           <ContributorCard key={contributor.id} contributor={contributor} backgroundColor="!bg-[#f2f2f2]" />
         ))}

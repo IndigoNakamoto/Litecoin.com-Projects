@@ -12,6 +12,7 @@ import { AddressStats, BountyStatus } from '@/utils/types'
 import { defaultAddressStats } from '@/utils/defaultValues'
 import { determineBountyStatus } from '@/utils/statusHelpers'
 import { useDonation } from '@/contexts/DonationContext'
+import { fetchGetJSON } from '@/utils/api-helpers'
 
 // Dynamically import PaymentModal to avoid SSR issues
 const PaymentModal = dynamic(() => import('../payment/PaymentModal'), {
@@ -33,7 +34,7 @@ type ProjectDetailClientProps = {
 
 export default function ProjectDetailClient({
   project,
-  addressStats = defaultAddressStats,
+  addressStats: initialAddressStats = defaultAddressStats,
   faqs = [],
   updates = [],
   posts = [],
@@ -48,6 +49,14 @@ export default function ProjectDetailClient({
   const [modalOpen, setModalOpen] = useState(false)
   const [isThankYouModalOpen, setThankYouModalOpen] = useState(false)
   const [selectedProject, setSelectedProject] = useState<Project | undefined>()
+
+  // State Variables for donation data
+  const [addressStats, setAddressStats] = useState<AddressStats | undefined>(initialAddressStats)
+  const [matchingDonors, setMatchingDonors] = useState<unknown[] | undefined>(undefined)
+  const [matchingTotal, setMatchingTotal] = useState(0)
+  const [monthlyTotal, setMonthlyTotal] = useState(0)
+  const [monthlyDonorCount, setMonthlyDonorCount] = useState(0)
+  const [timeLeftInMonth, setTimeLeftInMonth] = useState(0)
 
   // Handle URL query parameters for updates
   useEffect(() => {
@@ -97,6 +106,125 @@ export default function ProjectDetailClient({
   }
 
   const bountyStatus = determineBountyStatus(project.status)
+
+  // Extract project fields (with fallbacks for fields that might not exist in Project type)
+  type ProjectWithExtendedFields = Project & {
+    isMatching?: boolean
+    isBitcoinOlympics2024?: boolean
+    matchingMultiplier?: number
+    recurringAmountGoal?: number
+  }
+  const extendedProject = project as ProjectWithExtendedFields
+  const isMatching = extendedProject.isMatching ?? false
+  const isBitcoinOlympics2024 = extendedProject.isBitcoinOlympics2024 ?? false
+  const matchingMultiplier = extendedProject.matchingMultiplier
+  const recurringAmountGoal = extendedProject.recurringAmountGoal
+  const litecoinRaised = project.litecoinRaised ?? 0
+  const litecoinPaid = project.litecoinPaid ?? 0
+
+  // Fetch donations, contributors, and supporters
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setAddressStats(undefined)
+        const statsResponse = await fetchGetJSON(`/api/getInfoTGB?slug=${project.slug}`)
+        
+        // Type for API response which includes donatedCreatedTime
+        type StatsResponse = AddressStats & {
+          donatedCreatedTime?: Array<{
+            valueAtDonationTimeUSD: number
+            createdTime: string
+            amount?: number
+          }>
+        }
+        const stats = statsResponse as StatsResponse
+        
+        // Set addressStats with only the AddressStats fields
+        setAddressStats({
+          tx_count: stats.tx_count,
+          funded_txo_sum: stats.funded_txo_sum,
+          supporters: stats.supporters,
+        })
+
+        try {
+          const matchingDonorsData = await fetchGetJSON(
+            `/api/matching-donors-by-project?slug=${project.slug}`
+          )
+          // Ensure we set an array, even if API returns error or null
+          if (Array.isArray(matchingDonorsData)) {
+            setMatchingDonors(matchingDonorsData)
+          } else if (matchingDonorsData && typeof matchingDonorsData === 'object' && 'error' in matchingDonorsData) {
+            // API returned an error object
+            console.warn('Matching donors API returned error:', matchingDonorsData.error)
+            setMatchingDonors([])
+          } else {
+            // Unknown format, default to empty array
+            setMatchingDonors([])
+          }
+        } catch (error) {
+          console.error('Error fetching matching donors:', error)
+          setMatchingDonors([])
+        }
+
+        // Matching goal calculation
+        if (
+          isMatching &&
+          typeof matchingMultiplier === 'number' &&
+          isBitcoinOlympics2024
+        ) {
+          const matchingTotalCalc =
+            stats.funded_txo_sum * matchingMultiplier - stats.funded_txo_sum
+          setMatchingTotal(matchingTotalCalc)
+        }
+
+        // Monthly goal calculation
+        if (project.recurring && recurringAmountGoal) {
+          const currentDate = new Date()
+          const startOfMonth = new Date(
+            currentDate.getFullYear(),
+            currentDate.getMonth(),
+            1
+          )
+          const endOfMonth = new Date(
+            currentDate.getFullYear(),
+            currentDate.getMonth() + 1,
+            0
+          )
+
+          const donatedCreatedTime = stats.donatedCreatedTime || []
+          const monthlyDonations = donatedCreatedTime.filter(
+            (donation) => {
+              const donationDate = new Date(donation.createdTime)
+              return donationDate >= startOfMonth && donationDate <= endOfMonth
+            }
+          )
+
+          setMonthlyDonorCount(monthlyDonations.length)
+          const monthlyTotalCalc = monthlyDonations.reduce(
+            (total: number, donation) => total + Number(donation.valueAtDonationTimeUSD || donation.amount || 0),
+            0
+          )
+
+          setMonthlyTotal(monthlyTotalCalc)
+
+          const timeLeft = endOfMonth.getTime() - currentDate.getTime()
+          const daysLeft = Math.ceil(timeLeft / (1000 * 3600 * 24))
+          setTimeLeftInMonth(daysLeft)
+        }
+      } catch (error) {
+        console.error('Error fetching donation data:', error)
+      }
+    }
+
+    fetchData()
+  }, [
+    project.slug,
+    project.recurring,
+    isMatching,
+    matchingMultiplier,
+    isBitcoinOlympics2024,
+    recurringAmountGoal,
+  ])
 
   // Handle modal opening based on query parameters
   useEffect(() => {
@@ -210,23 +338,23 @@ export default function ProjectDetailClient({
         <AsideSection
           title={project.name}
           coverImage={project.coverImage || ''}
-          addressStats={addressStats}
-          formatUSD={formatUSD}
-          formatLits={formatLits}
-          litecoinRaised={0}
-          litecoinPaid={0}
-          isMatching={false}
-          isBitcoinOlympics2024={false}
+          addressStats={addressStats as AddressStats}
+          isMatching={isMatching || true}
+          isBitcoinOlympics2024={isBitcoinOlympics2024 || false}
           isRecurring={project.recurring}
-          matchingDonors={[]}
-          matchingTotal={0}
-          monthlyTotal={0}
-          recurringAmountGoal={0}
-          monthlyDonorCount={0}
-          timeLeftInMonth={0}
-          serviceFeeCollected={project.serviceFeesCollected}
-          bountyStatus={bountyStatus}
-          totalPaid={project.totalPaid}
+          matchingDonors={Array.isArray(matchingDonors) ? matchingDonors : []}
+          matchingTotal={matchingTotal}
+          serviceFeeCollected={project.serviceFeesCollected || 0}
+          totalPaid={project.totalPaid || 0}
+          litecoinRaised={litecoinRaised || 0}
+          litecoinPaid={litecoinPaid || 0}
+          formatLits={formatLits}
+          formatUSD={formatUSD}
+          monthlyTotal={monthlyTotal}
+          recurringAmountGoal={recurringAmountGoal}
+          monthlyDonorCount={monthlyDonorCount}
+          timeLeftInMonth={timeLeftInMonth}
+          bountyStatus={bountyStatus as BountyStatus}
           openPaymentModal={openPaymentModal}
         />
       </article>

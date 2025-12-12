@@ -12,10 +12,6 @@ interface PostsListProps {
 }
 
 const PostsList: React.FC<PostsListProps> = ({ posts }) => {
-  // Debug logging
-  console.log('[PostsList] Received posts:', posts)
-  console.log('[PostsList] Posts count:', posts?.length || 0)
-
   if (!posts || posts.length === 0) {
     return (
       <div className="posts-list">
@@ -35,14 +31,6 @@ const PostsList: React.FC<PostsListProps> = ({ posts }) => {
     
     // Also check for a single 'link' field (as in old implementation)
     const link = (fieldData as any).link || (fieldData as any)['link']
-
-    console.log(`[PostsList] Processing post ${id}:`, {
-      xPostLink,
-      youtubeLink,
-      redditLink,
-      link,
-      allFieldData: fieldData,
-    })
 
     // If there's a single 'link' field, try to determine its type
     if (link && !xPostLink && !youtubeLink && !redditLink) {

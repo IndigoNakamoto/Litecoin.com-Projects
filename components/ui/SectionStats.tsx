@@ -74,22 +74,18 @@ function SectionStats() {
           </div>
           <p className="text-[13px] uppercase">Paid to Contributors</p>
         </div>
-        {stats.donationsRaised !== null && (
-          <div className="flex flex-col items-center">
-            <div className="font-space-grotesk text-3xl font-semibold md:text-3xl lg:text-4xl">
-              {stats.donationsRaised}
-            </div>
-            <p className="text-[13px] uppercase">Donations Raised</p>
+        <div className="flex flex-col items-center">
+          <div className="font-space-grotesk text-3xl font-semibold md:text-3xl lg:text-4xl">
+            {stats.donationsRaised !== null ? stats.donationsRaised : '$0.00'}
           </div>
-        )}
-        {stats.donationsMatched !== null && (
-          <div className="flex flex-col items-center">
-            <div className="font-space-grotesk text-3xl font-semibold md:text-3xl lg:text-4xl">
-              {stats.donationsMatched}
-            </div>
-            <p className="text-[13px] uppercase">Donations Matched</p>
+          <p className="text-[13px] uppercase">Donations Raised</p>
+        </div>
+        <div className="flex flex-col items-center">
+          <div className="font-space-grotesk text-3xl font-semibold md:text-3xl lg:text-4xl">
+            {stats.donationsMatched !== null ? stats.donationsMatched : '$0.00'}
           </div>
-        )}
+          <p className="text-[13px] uppercase">Donations Matched</p>
+        </div>
       </div>
     </div>
   )
